@@ -204,4 +204,4 @@ async def api_match_detail(match_id: int):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8765, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8765)

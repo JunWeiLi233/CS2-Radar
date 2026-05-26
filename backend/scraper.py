@@ -9,11 +9,18 @@ Data sources:
 
 import re
 import json
+import hashlib
 
 from curl_cffi import requests
 from bs4 import BeautifulSoup
 
 BASE = "https://www.hltv.org"
+
+
+def _stable_id(text: str, mod: int = 100000) -> int:
+    """Deterministic integer ID from a string (Python hash() is randomized)."""
+    digest = hashlib.md5(text.encode("utf-8")).hexdigest()
+    return int(digest, 16) % mod
 
 _HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -106,7 +113,7 @@ def get_events() -> list[dict]:
 
         if event_name not in events_map:
             events_map[event_name] = {
-                "id": abs(hash(event_name)) % 100000,
+                "id": _stable_id(event_name),
                 "name": event_name,
                 "date_start": "",
                 "date_end": "",
@@ -170,7 +177,7 @@ def get_event_matches(event_id: int) -> tuple[dict, list[dict]]:
         ev_name = event_el.get_text(strip=True) if event_el else ""
 
         # Check if this match belongs to our event
-        computed_id = abs(hash(ev_name)) % 100000
+        computed_id = _stable_id(ev_name)
         if computed_id != event_id:
             continue
 
@@ -207,8 +214,8 @@ def get_event_matches(event_id: int) -> tuple[dict, list[dict]]:
             "id": match_id,
             "event_id": event_id,
             "event_name": event_name,
-            "team1": {"id": abs(hash(team1)) % 10000, "name": team1, "logo_url": ""},
-            "team2": {"id": abs(hash(team2)) % 10000, "name": team2, "logo_url": ""},
+            "team1": {"id": _stable_id(team1, 10000), "name": team1, "logo_url": ""},
+            "team2": {"id": _stable_id(team2, 10000), "name": team2, "logo_url": ""},
             "score1": score1,
             "score2": score2,
             "format": fmt,
@@ -394,7 +401,7 @@ def get_match_stats(match_id: int) -> dict:
             dpr = round(deaths / max(total_rounds, 1), 2)
 
             player_data = {
-                "player_id": abs(hash(f"{match_id}:{player_name}")) % 100000,
+                "player_id": _stable_id(f"{match_id}:{player_name}"),
                 "player_name": player_name,
                 "team_name": team1_name if current_team == 1 else team2_name,
                 "rating": rating,
@@ -443,8 +450,8 @@ def get_match_stats(match_id: int) -> dict:
             "id": match_id,
             "event_id": event_id,
             "event_name": event_name,
-            "team1": {"id": abs(hash(team1_name)) % 10000, "name": team1_name, "logo_url": ""},
-            "team2": {"id": abs(hash(team2_name)) % 10000, "name": team2_name, "logo_url": ""},
+            "team1": {"id": _stable_id(team1_name, 10000), "name": team1_name, "logo_url": ""},
+            "team2": {"id": _stable_id(team2_name, 10000), "name": team2_name, "logo_url": ""},
             "score1": score1,
             "score2": score2,
             "format": "",
