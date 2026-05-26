@@ -1,0 +1,9 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+*.log
+*.html.bak
+backend/*_page.html
