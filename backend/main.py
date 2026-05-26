@@ -143,13 +143,7 @@ async def api_event_detail(event_id: int):
             return {"event": event, "matches": matches}
     except Exception:
         pass
-
-    # Mock fallback
-    event = next((e for e in MOCK_EVENTS if e["id"] == event_id), None)
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    matches = _generate_mock_matches(event_id, event["name"])
-    return {"event": event, "matches": matches}
+    raise HTTPException(status_code=404, detail="Event not found")
 
 
 @app.get("/api/matches/{match_id}")
