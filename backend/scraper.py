@@ -242,22 +242,15 @@ def get_events() -> list[dict]:
             "score1": score1, "score2": score2, "format": fmt,
         })
 
-    # Build result
+    # Build result — fast path: no metadata fetches, just group results
     events = []
     for name, data in sorted(events_map.items(), key=lambda x: -len(x[1]["_matches"])):
         matches = data.pop("_matches")
-        first_match_id = data.pop("_first_match_id")
+        data.pop("_first_match_id")
         if len(matches) < 2:
             continue
-
-        # Enrich with event page metadata (uses match page to find real event ID)
-        real_id, slug = _get_event_id_and_slug(first_match_id)
-        if real_id:
-            data["id"] = real_id
-        meta = _fetch_event_meta(real_id or data["id"], slug) if slug else {}
-        data.update({k: v for k, v in meta.items() if v})
-
-        data["_match_ids"] = [m["id"] for m in matches]
+        data["match_count"] = len(matches)
+        data["_match_ids"] = [m["id"] for m in matches[:5]]  # Keep first 5 for quick access
         events.append(data)
 
     return events

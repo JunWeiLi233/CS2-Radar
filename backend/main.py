@@ -119,12 +119,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Simple in-memory cache for the slow HLTV scraping
+_cache: dict[str, tuple[float, object]] = {}
+_CACHE_TTL = 300  # 5 minutes
+
+
+def _cached(key: str, factory):
+    """Return cached value or compute + cache it."""
+    import time
+    now = time.time()
+    if key in _cache:
+        ts, val = _cache[key]
+        if now - ts < _CACHE_TTL:
+            return val
+    val = factory()
+    _cache[key] = (now, val)
+    return val
+
 
 @app.get("/api/events")
 async def api_events():
-    """Get recent CS2 events. Always fetches fresh from HLTV."""
+    """Get recent CS2 events. Cached for 5 minutes, always fresh from HLTV."""
     try:
-        events = await asyncio.get_event_loop().run_in_executor(_executor, get_events)
+        events = await asyncio.get_event_loop().run_in_executor(
+            _executor, lambda: _cached("events", get_events)
+        )
         if events:
             return events
     except Exception:
